@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+from flask import Flask, send_from_directory, jsonify
+
 from scanner import FileScanner
 from database import DatabaseManager
 from ai_classifier import AIClassifier
@@ -63,8 +65,20 @@ class StorageOptimizationPipeline:
         report += "-"*27
         print(report)
 
-if __name__ == "__main__":
-    dummy_target = "./test_storage"
+app = Flask(__name__)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+@app.route("/")
+def index():
+    return send_from_directory(ROOT_DIR, "index.html")
+
+@app.route("/<path:path>")
+def serve_assets(path):
+    return send_from_directory(ROOT_DIR, path)
+
+@app.route("/api/run_pipeline", methods=["POST"])
+def api_run_pipeline():
+    dummy_target = os.path.join(ROOT_DIR, "test_storage")
     if not os.path.exists(dummy_target):
         os.makedirs(dummy_target)
         # Seed test data
@@ -73,3 +87,8 @@ if __name__ == "__main__":
         
     pipeline = StorageOptimizationPipeline(target_directory=dummy_target)
     pipeline.run()
+    return jsonify({"status": "success", "message": "Pipeline completed"})
+
+if __name__ == "__main__":
+    print(f"Starting Flask App. Root frontend directory: {ROOT_DIR}")
+    app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
